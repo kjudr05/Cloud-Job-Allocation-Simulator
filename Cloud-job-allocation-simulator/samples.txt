@@ -1,0 +1,42 @@
+Jobs:
+```json
+[
+  { "id": 1, "cpu": 4, "memory": 2, "storage": 2 },
+  { "id": 2, "cpu": 3, "memory": 3, "storage": 3 },
+  { "id": 3, "cpu": 5, "memory": 1, "storage": 2 },
+  { "id": 4, "cpu": 2, "memory": 2, "storage": 1 },
+  { "id": 5, "cpu": 1, "memory": 1, "storage": 2 },
+  { "id": 6, "cpu": 6, "memory": 2, "storage": 3 },
+  { "id": 7, "cpu": 2, "memory": 1, "storage": 2 }
+]
+```
+Servers:
+```json
+[
+  { "id": 1, "cpu": 10, "memory": 8, "storage": 8 },
+  { "id": 2, "cpu": 8, "memory": 6, "storage": 6 },
+  { "id": 3, "cpu": 6, "memory": 6, "storage": 6 }
+]
+```
+
+Expected Output Differences:
+
+Algorithm 1: Greedy
+* Assigns each job to the first server that fits.
+* Servers get filled in order, without optimizing space.
+
+Algorithm 2: FFD
+* Sorts jobs by largest resource demand first.
+* Likely to **pack better**, reducing fragmentation.
+
+Algorithm 3: Min-Heap
+* Picks the least loaded server for each job.
+* Will balance load across all 3 servers more evenly.
+
+sample of c code:
+3 2 2
+1 4 2 5
+2 2 1 3
+3 6 3 2
+1 10 10 10
+2 5 5 5

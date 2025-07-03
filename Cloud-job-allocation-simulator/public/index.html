@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cloud Scheduler Simulation</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      /* Light Mode */
+      --background-color: #f8f9fa;
+      --card-background: #ffffff;
+      --text-color: #343a40;
+      --border-color: #e0e0e0;
+      --header-color: #212529;
+      --button-bg: #007bff;
+      --button-hover-bg: #0056b3;
+      --job-bg: #e6f7ff;
+      --job-border: #91d5ff;
+      --output-bg: #f1f3f5;
+      --output-border: #ced4da;
+      --select-bg: #ffffff;
+      --select-border: #ced4da;
+    }
+
+    body[data-theme='dark'] {
+      /* Dark Mode */
+      --background-color: #2c2c2c;
+      --card-background: #3c3c3c;
+      --text-color: #e0e0e0;
+      --border-color: #555555;
+      --header-color: #f8f9fa;
+      --button-bg: #6a9cff;
+      --button-hover-bg: #4a7fdc;
+      --job-bg: #4d607a;
+      --job-border: #7aa7ff;
+      --output-bg: #212121;
+      --output-border: #444444;
+      --select-bg: #3c3c3c;
+      --select-border: #555555;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      margin: 0;
+      padding: 2rem;
+      background: var(--background-color);
+      color: var(--text-color);
+      transition: background 0.3s ease, color 0.3s ease;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Resource Bar Styles */
+    .resource-bar-container {
+      background: var(--bar-container-bg);
+      border-radius: 4px;
+      overflow: hidden;
+      height: 14px; /* Slightly taller bar */
+      margin: 0.5rem 0 0.8rem; /* Adjusted margin for better spacing */
+      border: 1px solid var(--border-color); /* Added border */
+      box-shadow: inset 0 1px 2px rgba(0,0,0,0.05); /* Inner shadow for depth */
+    }
+
+    .resource-bar {
+      height: 100%;
+      transition: width 0.4s ease-out, background-color 0.4s ease; /* Smoother transitions */
+      border-radius: 3px; /* Slightly rounded bar ends */
+    }
+
+    .resource-label {
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--text-color);
+      margin-top: 0.8rem; /* Space above each bar label */
+      margin-bottom: 0.2rem;
+    }
+
+    /* Resource Bar Colors (Variables) */
+    :root {
+      /* Light Mode */
+      /* ... existing variables ... */
+      --bar-container-bg: #e0e0e0;
+      --bar-bg-normal: #28a745; /* Green */
+      --bar-bg-warn: #ffc107;   /* Orange (75-90%) */
+      --bar-bg-critical: #dc3545; /* Red (>90%) */
+    }
+
+    body[data-theme='dark'] {
+      /* Dark Mode */
+      /* ... existing variables ... */
+      --bar-container-bg: #555555;
+      --bar-bg-normal: #20c997; /* Teal/Light Green */
+      --bar-bg-warn: #ffca28;   /* Yellow/Orange */
+      --bar-bg-critical: #e74c3c; /* Darker Red */
+    }
+
+    h1, h2 {
+      color: var(--header-color);
+      margin-bottom: 1.5rem;
+      font-weight: 700;
+    }
+
+    .container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 2rem;
+      margin-top: 1.5rem;
+    }
+
+    .card {
+      background: var(--card-background);
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+      padding: 1.5rem;
+      flex: 1;
+      min-width: 320px;
+      display: flex;
+      flex-direction: column;
+      border: 1px solid var(--border-color);
+      transition: background 0.3s ease, border-color 0.3s ease;
+    }
+
+    label {
+      display: block;
+      margin: 0.8rem 0 0.4rem;
+      font-weight: 600;
+      color: var(--text-color);
+    }
+
+    textarea, select, button {
+      width: 100%;
+      padding: 0.75rem;
+      font-size: 1rem;
+      margin-bottom: 1rem;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      box-sizing: border-box;
+      background-color: var(--select-bg);
+      color: var(--text-color);
+      transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 150px;
+      font-family: 'Inter', sans-serif;
+    }
+
+    select {
+      appearance: none; /* Remove default arrow */
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23666'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 0.75rem center;
+      background-size: 1.25rem;
+      padding-right: 2.5rem;
+    }
+
+    button {
+      background-color: var(--button-bg);
+      color: white;
+      cursor: pointer;
+      border: none;
+      font-weight: 600;
+      margin-top: 0.5rem;
+      transition: background-color 0.2s ease, transform 0.1s ease;
+    }
+
+    button:hover {
+      background-color: var(--button-hover-bg);
+      transform: translateY(-1px);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+
+    pre {
+      background: var(--output-bg);
+      padding: 1rem;
+      border: 1px solid var(--output-border);
+      white-space: pre-wrap;
+      word-break: break-all;
+      overflow-x: auto;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      line-height: 1.4;
+      max-height: 170px;
+      transition: background 0.3s ease, border-color 0.3s ease;
+    }
+
+    .server-blocks {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1.5rem;
+      margin-top: 2rem;
+      justify-content: flex-start;
+    }
+
+    .server {
+      background: var(--card-background);
+      border: 1px solid var(--border-color);
+      padding: 1rem;
+      border-radius: 8px;
+      flex: 1;
+      min-width: 280px;
+      max-width: 400px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+      transition: background 0.3s ease, border-color 0.3s ease;
+    }
+
+    .server h3 {
+      color: var(--header-color);
+      margin-top: 0;
+      margin-bottom: 1rem;
+      font-weight: 600;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 0.5rem;
+    }
+
+    .job {
+      background: var(--job-bg);
+      color: var(--text-color);
+      margin: 0.6rem 0;
+      padding: 0.6rem 0.8rem;
+      border-radius: 4px;
+      font-size: 0.9rem;
+      border-left: 4px solid var(--job-border);
+      transition: background 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+    }
+
+    .theme-toggle {
+      position: absolute;
+      top: 2rem;
+      right: 2rem;
+      background: var(--card-background);
+      border: 1px solid var(--border-color);
+      padding: 0.5rem 1rem;
+      border-radius: 20px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: background 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+    }
+
+    .theme-toggle:hover {
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    @media (max-width: 768px) {
+      .container {
+        flex-direction: column;
+      }
+      .card {
+        min-width: unset;
+        width: 100%;
+      }
+      .theme-toggle {
+        position: static;
+        margin-bottom: 1rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="theme-toggle" onclick="toggleTheme()">
+    <span id="theme-icon">☀️</span>
+    <span id="theme-text">Light Mode</span>
+  </div>
+
+  <h1>☁️ Cloud Scheduler Simulation</h1>
+
+  <div class="container">
+    <div class="card">
+      <label for="jobs">Jobs JSON:</label>
+      <textarea id="jobs" rows="10">[
+  { "id": 1, "cpu": 4, "memory": 2, "storage": 2 },
+  { "id": 2, "cpu": 3, "memory": 3, "storage": 3 },
+  { "id": 3, "cpu": 5, "memory": 1, "storage": 2 },
+  { "id": 4, "cpu": 2, "memory": 2, "storage": 1 },
+  { "id": 5, "cpu": 1, "memory": 1, "storage": 2 },
+  { "id": 6, "cpu": 6, "memory": 2, "storage": 3 },
+  { "id": 7, "cpu": 2, "memory": 1, "storage": 2 }
+]</textarea>
+    </div>
+
+    <div class="card">
+      <label for="servers">Servers JSON:</label>
+      <textarea id="servers" rows="10">[
+  { "id": 1, "cpu": 10, "memory": 8, "storage": 8 },
+  { "id": 2, "cpu": 8, "memory": 6, "storage": 6 },
+  { "id": 3, "cpu": 6, "memory": 6, "storage": 6 }
+]</textarea>
+    </div>
+
+    <div class="card">
+      <label for="algorithm">Select Algorithm:</label>
+      <select id="algorithm">
+        <option value="1">Greedy</option>
+        <option value="2">First-Fit Decreasing (FFD)</option>
+        <option value="3">Min-Heap</option>
+      </select>
+
+      <button onclick="runScheduler()">Run Simulation</button>
+
+      <h2>Raw Output:</h2>
+      <pre id="output">Waiting for input...</pre>
+    </div>
+  </div>
+
+  <h2>Visualized Allocation:</h2>
+  <div class="server-blocks" id="visualization"></div>
+
+  <script>
+    async function runScheduler() {
+      try {
+        const jobs = JSON.parse(document.getElementById('jobs').value);
+        const servers = JSON.parse(document.getElementById('servers').value);
+        const algorithm = parseInt(document.getElementById('algorithm').value);
+
+        document.getElementById('output').textContent = 'Scheduling...';
+        document.getElementById('visualization').innerHTML = ''; // Clear previous visualization
+
+        const response = await fetch('http://localhost:3000/schedule', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ jobs, servers, algorithm })
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
+        }
+
+        const result = await response.json();
+        document.getElementById('output').textContent = JSON.stringify(result, null, 2);
+        renderVisualization(result, jobs);
+      } catch (error) {
+        document.getElementById('output').textContent = `Error: ${error.message}`;
+        console.error('Scheduler error:', error);
+      }
+    }
+
+    // function renderVisualization(assignments, allJobs) {
+    //   const container = document.getElementById('visualization');
+    //   container.innerHTML = '';
+
+    //   // Group jobs by assigned server
+    //   const serversAllocation = {};
+    //   assignments.forEach(item => {
+    //     const serverId = item.assigned_server;
+    //     const job = allJobs.find(j => j.id === item.job_id);
+    //     if (job) { // Only add if job was successfully assigned
+    //       if (!serversAllocation[serverId]) {
+    //         serversAllocation[serverId] = [];
+    //       }
+    //       serversAllocation[serverId].push(job);
+    //     }
+    //   });
+
+    //   // Render each server block
+    //   if (Object.keys(serversAllocation).length === 0 && assignments.length > 0) {
+    //     // Handle cases where jobs are unassigned, but the backend still returns assignments
+    //     // (e.g., if assigned_server is null or 0 for unassigned)
+    //     container.innerHTML = '<p>No jobs were successfully assigned to servers, or server IDs are missing from assignments.</p>';
+    //     return;
+    //   } else if (Object.keys(serversAllocation).length === 0 && assignments.length === 0) {
+    //      container.innerHTML = '<p>No assignments made.</p>';
+    //      return;
+    //   }
+
+
+    //   Object.keys(serversAllocation).sort((a, b) => a - b).forEach(serverId => {
+    //     const serverDiv = document.createElement('div');
+    //     serverDiv.className = 'server';
+    //     const title = document.createElement('h3');
+    //     title.textContent = `Server ${serverId}`;
+    //     serverDiv.appendChild(title);
+
+    //     if (serversAllocation[serverId].length === 0) {
+    //         const noJobs = document.createElement('p');
+    //         noJobs.textContent = 'No jobs assigned to this server.';
+    //         serverDiv.appendChild(noJobs);
+    //     } else {
+    //         serversAllocation[serverId].forEach(job => {
+    //             const jobDiv = document.createElement('div');
+    //             jobDiv.className = 'job';
+    //             jobDiv.textContent = `Job ${job.id} (CPU: ${job.cpu}, MEM: ${job.memory}, STOR: ${job.storage})`;
+    //             serverDiv.appendChild(jobDiv);
+    //         });
+    //     }
+    //     container.appendChild(serverDiv);
+    //   });
+
+    //   // Display unassigned jobs
+    //   const assignedJobIds = new Set(assignments.map(item => item.job_id));
+    //   const unassignedJobs = allJobs.filter(job => !assignedJobIds.has(job.id));
+
+    //   if (unassignedJobs.length > 0) {
+    //     const unassignedDiv = document.createElement('div');
+    //     unassignedDiv.className = 'server'; // Reusing server style for a visually distinct block
+    //     const title = document.createElement('h3');
+    //     title.textContent = `Unassigned Jobs`;
+    //     unassignedDiv.appendChild(title);
+
+    //     unassignedJobs.forEach(job => {
+    //       const jobDiv = document.createElement('div');
+    //       jobDiv.className = 'job';
+    //       jobDiv.style.backgroundColor = 'var(--job-bg)'; /* Custom styling for unassigned */
+    //       jobDiv.style.borderColor = 'var(--job-border)';
+    //       jobDiv.textContent = `Job ${job.id} (CPU: ${job.cpu}, MEM: ${job.memory}, STOR: ${job.storage})`;
+    //       unassignedDiv.appendChild(jobDiv);
+    //     });
+    //     container.appendChild(unassignedDiv);
+    //   }
+    // }
+
+
+    // Theme Toggle Logic
+ 
+    function renderVisualization(assignments, allJobs) {
+      const container = document.getElementById('visualization');
+      container.innerHTML = '';
+
+      const serversAllocation = {};
+      assignments.forEach(item => {
+        const serverId = item.assigned_server;
+        const job = allJobs.find(j => j.id === item.job_id);
+        if (job) {
+          if (!serversAllocation[serverId]) {
+            serversAllocation[serverId] = [];
+          }
+          serversAllocation[serverId].push(job);
+        }
+      });
+
+      // Get original server capacities once
+      const originalServers = JSON.parse(document.getElementById('servers').value);
+
+      if (Object.keys(serversAllocation).length === 0 && assignments.length > 0) {
+        container.innerHTML = '<p>No jobs were successfully assigned to servers, or server IDs are missing from assignments.</p>';
+        return;
+      } else if (Object.keys(serversAllocation).length === 0 && assignments.length === 0) {
+         container.innerHTML = '<p>No assignments made.</p>';
+         return;
+      }
+
+      Object.keys(serversAllocation).sort((a, b) => a - b).forEach(serverId => {
+        const serverDiv = document.createElement('div');
+        serverDiv.className = 'server';
+        const title = document.createElement('h3');
+        title.textContent = `Server ${serverId}`;
+        serverDiv.appendChild(title);
+
+        const serverCapacityData = originalServers.find(s => s.id === parseInt(serverId));
+
+        const jobsOnServer = serversAllocation[serverId];
+        const resources = ['cpu', 'memory', 'storage'];
+
+        resources.forEach(resource => {
+          const totalUsed = jobsOnServer.reduce((sum, job) => sum + (job[resource] || 0), 0);
+          const capacity = serverCapacityData?.[resource] || 1; // Default to 1 to prevent division by zero
+
+          const usagePercent = Math.min((totalUsed / capacity) * 100, 100);
+
+          const resourceLabel = document.createElement('div');
+          resourceLabel.className = 'resource-label';
+          resourceLabel.textContent = `${resource.toUpperCase()}: ${totalUsed} / ${capacity} (${usagePercent.toFixed(1)}%)`;
+          serverDiv.appendChild(resourceLabel);
+
+          const resourceBarContainer = document.createElement('div');
+          resourceBarContainer.className = 'resource-bar-container';
+
+          const resourceBar = document.createElement('div');
+          resourceBar.className = 'resource-bar';
+          resourceBar.style.width = usagePercent + '%';
+
+          // Apply color based on usage
+          if (usagePercent > 90) {
+            resourceBar.style.backgroundColor = 'var(--bar-bg-critical)';
+          } else if (usagePercent > 75) {
+            resourceBar.style.backgroundColor = 'var(--bar-bg-warn)';
+          } else {
+            resourceBar.style.backgroundColor = 'var(--bar-bg-normal)';
+          }
+
+          resourceBarContainer.appendChild(resourceBar);
+          serverDiv.appendChild(resourceBarContainer);
+        });
+
+
+        // Jobs display
+        if (jobsOnServer.length === 0) {
+            const noJobs = document.createElement('p');
+            noJobs.textContent = 'No jobs assigned to this server.';
+            noJobs.style.fontSize = '0.9rem';
+            noJobs.style.marginTop = '1rem';
+            noJobs.style.color = 'var(--text-color)';
+            serverDiv.appendChild(noJobs);
+        } else {
+            jobsOnServer.forEach(job => {
+                const jobDiv = document.createElement('div');
+                jobDiv.className = 'job';
+                jobDiv.textContent = `Job ${job.id} (CPU: ${job.cpu}, MEM: ${job.memory}, STOR: ${job.storage})`;
+                serverDiv.appendChild(jobDiv);
+            });
+        }
+        container.appendChild(serverDiv);
+      });
+
+      // Display unassigned jobs (This part remains mostly the same)
+      const assignedJobIds = new Set(assignments.map(item => item.job_id));
+      const unassignedJobs = allJobs.filter(job => !assignedJobIds.has(job.id));
+
+      if (unassignedJobs.length > 0) {
+        const unassignedDiv = document.createElement('div');
+        unassignedDiv.className = 'server';
+        const title = document.createElement('h3');
+        title.textContent = `Unassigned Jobs`;
+        unassignedDiv.appendChild(title);
+
+        unassignedJobs.forEach(job => {
+          const jobDiv = document.createElement('div');
+          jobDiv.className = 'job';
+          jobDiv.style.backgroundColor = 'var(--job-bg)';
+          jobDiv.style.borderColor = 'var(--job-border)';
+          jobDiv.textContent = `Job ${job.id} (CPU: ${job.cpu}, MEM: ${job.memory}, STOR: ${job.storage})`;
+          unassignedDiv.appendChild(jobDiv);
+        });
+        container.appendChild(unassignedDiv);
+      }
+    }
+
+
+    function toggleTheme() {
+      const body = document.body;
+      const themeIcon = document.getElementById('theme-icon');
+      const themeText = document.getElementById('theme-text');
+
+      if (body.getAttribute('data-theme') === 'dark') {
+        body.removeAttribute('data-theme');
+        themeIcon.textContent = '☀️';
+        themeText.textContent = 'Light Mode';
+        localStorage.setItem('theme', 'light');
+      } else {
+        body.setAttribute('data-theme', 'dark');
+        themeIcon.textContent = '🌙';
+        themeText.textContent = 'Dark Mode';
+        localStorage.setItem('theme', 'dark');
+      }
+    }
+
+    // Initialize theme based on user's preference or saved setting
+    document.addEventListener('DOMContentLoaded', () => {
+      const savedTheme = localStorage.getItem('theme');
+      if (savedTheme === 'dark') {
+        document.body.setAttribute('data-theme', 'dark');
+        document.getElementById('theme-icon').textContent = '🌙';
+        document.getElementById('theme-text').textContent = 'Dark Mode';
+      } else {
+        document.body.removeAttribute('data-theme');
+        document.getElementById('theme-icon').textContent = '☀️';
+        document.getElementById('theme-text').textContent = 'Light Mode';
+      }
+    });
+
+  </script>
+</body>
+</html>
